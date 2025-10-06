@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App</title>
+    <title>Todo App - Tailwind</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -14,8 +14,42 @@
             <span id="errorText"></span>
         </div>
 
+        <div id="successMessage" class="hidden mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            <span id="successText"></span>
+        </div>
+
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Crear nuevo todo</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">🔍 Buscar Todo por ID</h2>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <form id="searchForm" class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label for="searchId" class="block text-sm font-medium text-gray-700 mb-1">ID del Todo</label>
+                        <input 
+                            type="number" 
+                            id="searchId" 
+                            name="searchId"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ingresa el ID a buscar"
+                            min="1"
+                            required
+                        >
+                    </div>
+                    <div class="flex items-end">
+                        <button 
+                            type="submit"
+                            class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                            Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="searchResult" class="hidden"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">➕ Crear nuevo todo</h2>
             <form id="createForm" class="space-y-4">
                 <div>
                     <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
@@ -82,7 +116,7 @@
         <div id="todoListContainer" class="hidden bg-white rounded-lg shadow-md overflow-hidden">
             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-800">
-                    Mis Todos (<span id="todoCount">0</span>)
+                    📋 Mis Todos (<span id="todoCount">0</span>)
                 </h2>
             </div>
             <div id="todoList" class="divide-y divide-gray-200"></div>
@@ -96,7 +130,7 @@
     <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <h2 class="text-2xl font-semibold text-gray-800">Editar Todo</h2>
+                <h2 class="text-2xl font-semibold text-gray-800">✏️ Editar Todo</h2>
                 <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -161,7 +195,7 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 pt-4">
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
                     <button 
                         type="submit"
                         class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -180,258 +214,22 @@
         </div>
     </div>
 
-    <script>
-        const API_BASE_URL = 'https://todoapitest.juansegaliz.com';
-        let todos = [];
+    <div id="viewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 class="text-2xl font-semibold text-gray-800">👁️ Detalle del Todo</h2>
+                <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
 
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            errorText.textContent = message;
-            errorDiv.classList.remove('hidden');
-            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
-        }
+            <div id="viewModalContent" class="p-6">
+            </div>
+        </div>
+    </div>
 
-        function getPriorityColor(priority) {
-            switch (priority) {
-                case 3: return 'bg-red-100 text-red-800';
-                case 2: return 'bg-yellow-100 text-yellow-800';
-                default: return 'bg-green-100 text-green-800';
-            }
-        }
-
-        function getPriorityLabel(priority) {
-            switch (priority) {
-                case 3: return 'Alta';
-                case 2: return 'Media';
-                default: return 'Baja';
-            }
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        }
-
-        function toLocalDateTime(dateString) {
-            const date = new Date(dateString);
-            const offset = date.getTimezoneOffset() * 60000;
-            const localDate = new Date(date.getTime() - offset);
-            return localDate.toISOString().slice(0, 16);
-        }
-
-        async function loadTodos() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/todos`);
-                if (!response.ok) throw new Error('Error al cargar los todos');
-                
-                const data = await response.json();
-                todos = data.data;
-                renderTodos();
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Error al cargar los todos');
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
-            }
-        }
-
-        async function createTodo(todoData) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/todos`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(todoData),
-                });
-                
-                if (!response.ok) throw new Error('Error al crear el todo');
-                
-                await loadTodos();
-                document.getElementById('createForm').reset();
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Error al crear el todo');
-            }
-        }
-
-        async function updateTodo(id, todoData) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(todoData),
-                });
-                
-                if (!response.ok) throw new Error('Error al actualizar el todo');
-                
-                await loadTodos();
-                closeEditModal();
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Error al actualizar el todo');
-            }
-        }
-
-        async function deleteTodo(id) {
-            if (!confirm('¿Estás seguro de eliminar este todo?')) return;
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
-                    method: 'DELETE',
-                });
-                
-                if (!response.ok) throw new Error('Error al eliminar el todo');
-                
-                await loadTodos();
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Error al eliminar el todo');
-            }
-        }
-
-        async function toggleComplete(todo) {
-            const updateData = {
-                title: todo.title,
-                description: todo.description,
-                isCompleted: !todo.isCompleted,
-                priority: todo.priority,
-                dueAt: todo.dueAt,
-            };
-            await updateTodo(todo.id, updateData);
-        }
-
-        function renderTodos() {
-            const todoList = document.getElementById('todoList');
-            const todoCount = document.getElementById('todoCount');
-            const todoListContainer = document.getElementById('todoListContainer');
-            const emptyState = document.getElementById('emptyState');
-
-            todoCount.textContent = todos.length;
-
-            if (todos.length === 0) {
-                todoListContainer.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            todoListContainer.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-
-            todoList.innerHTML = todos.map(todo => `
-                <div class="p-6 hover:bg-gray-50 transition-colors">
-                    <div class="flex items-start gap-4">
-                        <input
-                            type="checkbox"
-                            ${todo.isCompleted ? 'checked' : ''}
-                            onchange="toggleComplete(${JSON.stringify(todo).replace(/"/g, '&quot;')})"
-                            class="mt-1 h-5 w-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                        >
-
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between gap-4 mb-2">
-                                <div class="flex-1 min-w-0">
-                                    <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">ID: ${todo.id}</span>
-                                    <h3 class="text-lg font-medium mt-2 ${todo.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'}">
-                                        ${todo.title}
-                                    </h3>
-                                </div>
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${getPriorityColor(todo.priority)}">
-                                    ${getPriorityLabel(todo.priority)}
-                                </span>
-                            </div>
-
-                            ${todo.description ? `
-                                <p class="text-sm mb-3 ${todo.isCompleted ? 'text-gray-400' : 'text-gray-600'}">
-                                    ${todo.description}
-                                </p>
-                            ` : ''}
-
-                            <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                                <span>📅 Vence: ${formatDate(todo.dueAt)}</span>
-                                <span>🕒 Creado: ${formatDate(todo.createdAt)}</span>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button
-                                onclick="openEditModal(${todo.id})"
-                                class="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium"
-                            >
-                                Editar
-                            </button>
-                            <button
-                                onclick="deleteTodo(${todo.id})"
-                                class="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
-                            >
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function openEditModal(id) {
-            const todo = todos.find(t => t.id === id);
-            if (!todo) return;
-
-            document.getElementById('editId').value = todo.id;
-            document.getElementById('editTitle').value = todo.title;
-            document.getElementById('editDescription').value = todo.description;
-            document.getElementById('editCompleted').checked = todo.isCompleted;
-            document.getElementById('editPriority').value = todo.priority;
-            document.getElementById('editDueAt').value = toLocalDateTime(todo.dueAt);
-
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-            document.getElementById('editForm').reset();
-        }
-
-        document.getElementById('createForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const todoData = {
-                title: formData.get('title').trim(),
-                description: formData.get('description').trim(),
-                priority: parseInt(formData.get('priority')),
-                dueAt: formData.get('dueAt') || new Date().toISOString(),
-            };
-
-            await createTodo(todoData);
-        });
-
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const id = parseInt(document.getElementById('editId').value);
-            const todoData = {
-                title: document.getElementById('editTitle').value.trim(),
-                description: document.getElementById('editDescription').value.trim(),
-                isCompleted: document.getElementById('editCompleted').checked,
-                priority: parseInt(document.getElementById('editPriority').value),
-                dueAt: new Date(document.getElementById('editDueAt').value).toISOString(),
-            };
-
-            await updateTodo(id, todoData);
-        });
-
-        document.getElementById('editModal').addEventListener('click', (e) => {
-            if (e.target.id === 'editModal') {
-                closeEditModal();
-            }
-        });
-
-        loadTodos();
-    </script>
+    <script src="./assets/js/app.js"></script>
 </body>
 </html>
