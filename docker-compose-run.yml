@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  tailwind_api:
+    image: nginx:1.27-alpine
+    container_name: tailwindfront   # mismo que en build
+    volumes:
+      - .:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/site.conf
+    ports:
+      - "8082:80"
+    restart: unless-stopped
